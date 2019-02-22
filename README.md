@@ -58,6 +58,12 @@ Where should we save the peer database
 On Linux, you should use `/dev/shm` as it is very fast.
 On Windows, you will need to change this value to some other valid path such as `C:/Peers.txt`
 
+### `__LOCATION_TRUSTED_TORRENTS` `string`
+
+Where should we save the peer database
+On Linux, you should use `/dev/shm` as it is very fast.
+On Windows, you will need to change this value to some other valid path such as `C:/Peers.txt`
+
 ### `__ENABLE_SHORT_ANNOUNCE` `bool`
 
 Should we enable short announces?

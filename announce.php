@@ -26,12 +26,12 @@
  * This allows anyone to see the entire peer database by appending ?debug to the announce URL.
  * It will also create debugging file used to report php errors.
  */
-define('__DEBUGGING_ENABLED', false);
+define('__DEBUGGING_ENABLED', true);
 
 /**
  * Version
  */
-define('__VERSION', 1.5);
+define('__VERSION', 1.6);
 
 /**
  * How often should clients pull server for new clients? (Seconds)
@@ -71,10 +71,9 @@ define('__LOCATION_PEERS', '/dev/shm/peers.txt');
 /**
  * Where should the list of trusted torrents be located
  * File should containe sha1 info_hash comma separated values
- * On Linux, you should use /dev/shm as it is very fast.
  * On Windows, you will need to change this value to some other valid path such as C:/truested-torrents.txt
  */
-define('__LOCATION_TRUSTED_TORRENTS', '/dev/shm/trusted_torrents.txt');
+define('__LOCATION_TRUSTED_TORRENTS', 'trusted_torrents.txt');
 
 /**
  * Should we enable short announces?
@@ -88,26 +87,9 @@ define('__ENABLE_SHORT_ANNOUNCE', false);
  */
 define('__REDIR_BROWSER', '');
 
-define('__LOG_FILE', __DIR__ . '/error.log');
-
 /***********************
  ** Configuration end **
  ***********************/
-
-if(__DEBUGGING_ENABLED === true) {
-
-    set_error_handler(function ($errno, $errstr, $errfile, $errline) {
-
-        if (file_exists(__LOG_FILE) === false) {
-            $handle = fopen(__LOG_FILE, 'w+b');
-            fclose($handle);
-        }
-
-        file_put_contents(__LOG_FILE, sprintf('Line: %s - Error: %s', $errline, $errstr));
-
-    }, E_ALL);
-
-}
 
 //Send response as text
 header('Content-type: Text/Plain');
@@ -271,7 +253,7 @@ function valdata($g, $must_be_20_chars = false, $torrent_validation = false)
     if (!isset($_GET[$g])) {
         die(track('Missing one or more arguments'));
     }
-    if (!ctype_alnum($_GET[$g])) {
+    if (!is_string($_GET[$g])) {
         die(track('Invalid types on one or more arguments'));
     }
     if ($must_be_20_chars && strlen($_GET[$g]) != 20) {
@@ -281,7 +263,7 @@ function valdata($g, $must_be_20_chars = false, $torrent_validation = false)
         die(track('Argument ' . $g . ' is too large to handle'));
     }
     if($torrent_validation) {
-        $torrent_info_hash = bin2hex($_GET[$g]);
+        $torrent_info_hash = bin2hex(urldecode(urldecode($_GET[$g])));
         $trusted = false;
         $truested_torrents = explode(",", file_get_contents(__LOCATION_TRUSTED_TORRENTS));
         foreach ($truested_torrents as $torrent) {

@@ -26,7 +26,7 @@
  * This allows anyone to see the entire peer database by appending ?debug to the announce URL.
  * It will also create debugging file used to report php errors.
  */
-define('__DEBUGGING_ENABLED', true);
+define('__DEBUGGING_ENABLED', false);
 
 /**
  * Version
@@ -66,7 +66,15 @@ define('__NO_SEED_P2P', true);
  * On Linux, you should use /dev/shm as it is very fast.
  * On Windows, you will need to change this value to some other valid path such as C:/Peers.txt
  */
-define('__LOCATION_PEERS', 'peers.txt');
+define('__LOCATION_PEERS', '/dev/shm/peers.txt');
+
+/**
+ * Where should the list of trusted torrents be located
+ * File should containe sha1 info_hash comma separated values
+ * On Linux, you should use /dev/shm as it is very fast.
+ * On Windows, you will need to change this value to some other valid path such as C:/truested-torrents.txt
+ */
+define('__LOCATION_TRUSTED_TORRENTS', '/dev/shm/trusted_torrents.txt');
 
 /**
  * Should we enable short announces?
@@ -258,12 +266,12 @@ if ($d === false) {
 }
 
 //Do some input validation
-function valdata($g, $must_be_20_chars = false)
+function valdata($g, $must_be_20_chars = false, $torrent_validation = false)
 {
     if (!isset($_GET[$g])) {
         die(track('Missing one or more arguments'));
     }
-    if (!is_string($_GET[$g])) {
+    if (!ctype_alnum($_GET[$g])) {
         die(track('Invalid types on one or more arguments'));
     }
     if ($must_be_20_chars && strlen($_GET[$g]) != 20) {
@@ -272,12 +280,25 @@ function valdata($g, $must_be_20_chars = false)
     if (strlen($_GET[$g]) > 128) { //128 chars should really be enough
         die(track('Argument ' . $g . ' is too large to handle'));
     }
+    if($torrent_validation) {
+        $torrent_info_hash = bin2hex($_GET[$g]);
+        $trusted = false;
+        $truested_torrents = explode(",", file_get_contents(__LOCATION_TRUSTED_TORRENTS));
+        foreach ($truested_torrents as $torrent) {
+            if($torrent == $torrent_info_hash) {
+                $trusted = true;
+            }
+        }
+        if(!$trusted) {
+            die(track('Torrent is not truested'));
+        }
+    }
 }
 
 //Inputs that are needed, do not continue without these
 valdata('peer_id', true);
 valdata('port');
-valdata('info_hash', true);
+valdata('info_hash', true, true);
 
 //Use the tracker key extension. Makes it much harder to steal a session.
 if (!isset($_GET['key'])) {
